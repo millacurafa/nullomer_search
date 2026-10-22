@@ -1,0 +1,50 @@
+name: Deploy static app to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Stage static site and example genomes
+        run: |
+          mkdir -p _site/data
+          cp index.html styles.css app.js analysis-worker.js favicon.svg _site/
+          cp data/NC_000913_K12.fasta \
+             data/NC_007973.1_CH34_1.fasta \
+             data/NC_007974.2_CH34_2.fasta \
+             data/NC_007971.2_30.fasta \
+             data/NC_007972.2_28.fasta \
+             data/NC_007680.1_P6.fasta \
+             _site/data/
+          touch _site/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
